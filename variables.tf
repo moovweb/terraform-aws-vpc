@@ -293,6 +293,13 @@ variable "vpn_gateway_tags" {
   default     = {}
 }
 
+variable "ignored_tags" {
+  type = "list"
+  default = {}
+  description = "Tags to ignore. Do not include tag. as it is prepended to all in this list"
+}
+
+
 variable "enable_dhcp_options" {
   description = "Should be true if you want to specify a DHCP options set with a custom domain name, DNS servers, NTP servers, netbios servers, and/or netbios server type"
   default     = false
