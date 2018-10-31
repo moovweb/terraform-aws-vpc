@@ -8,8 +8,6 @@ locals {
 
   # Use `local.vpc_id` to give a hint to Terraform that subnets should be deleted before secondary CIDR blocks can be free!
   vpc_id = "${element(concat(aws_vpc_ipv4_cidr_block_association.this.*.vpc_id, aws_vpc.this.*.id, list("")), 0)}"
-
-  ignored_tags = "${formatlist("tags.%", var.ignored_tags)}"
 }
 
 ######
@@ -25,8 +23,9 @@ resource "aws_vpc" "this" {
   assign_generated_ipv6_cidr_block = "${var.assign_generated_ipv6_cidr_block}"
 
   tags = "${merge(map("Name", format("%s", var.name)), var.tags, var.vpc_tags)}"
+
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -51,8 +50,9 @@ resource "aws_vpc_dhcp_options" "this" {
   netbios_node_type    = "${var.dhcp_options_netbios_node_type}"
 
   tags = "${merge(map("Name", format("%s", var.name)), var.tags, var.dhcp_options_tags)}"
+  
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -75,8 +75,9 @@ resource "aws_internet_gateway" "this" {
   vpc_id = "${local.vpc_id}"
 
   tags = "${merge(map("Name", format("%s", var.name)), var.tags, var.igw_tags)}"
+  
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -89,8 +90,9 @@ resource "aws_route_table" "public" {
   vpc_id = "${local.vpc_id}"
 
   tags = "${merge(map("Name", format("%s-${var.public_subnet_suffix}", var.name)), var.tags, var.public_route_table_tags)}"
+  
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -120,7 +122,10 @@ resource "aws_route_table" "private" {
   lifecycle {
     # When attaching VPN gateways it is common to define aws_vpn_gateway_route_propagation
     # resources that manipulate the attributes of the routing table (typically for the private subnets)
-    ignore_changes = "${merge(map("propagating_vgws", local.ignored_tags))}"
+    ignore_changes = [
+      "propagating_vgws",
+      "tags"
+    ]
   }
 }
 
@@ -134,7 +139,7 @@ resource "aws_route_table" "database" {
 
   tags = "${merge(var.tags, var.database_route_table_tags, map("Name", "${var.name}-${var.database_subnet_suffix}"))}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -148,7 +153,7 @@ resource "aws_route_table" "redshift" {
 
   tags = "${merge(var.tags, var.redshift_route_table_tags, map("Name", "${var.name}-${var.redshift_subnet_suffix}"))}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -162,7 +167,7 @@ resource "aws_route_table" "elasticache" {
 
   tags = "${merge(var.tags, var.elasticache_route_table_tags, map("Name", "${var.name}-${var.elasticache_subnet_suffix}"))}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -176,7 +181,7 @@ resource "aws_route_table" "intra" {
 
   tags = "${merge(map("Name", "${var.name}-intra"), var.tags, var.intra_route_table_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -193,7 +198,7 @@ resource "aws_subnet" "public" {
 
   tags = "${merge(map("Name", format("%s-${var.public_subnet_suffix}-%s", var.name, element(var.azs, count.index))), var.tags, var.public_subnet_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -209,7 +214,7 @@ resource "aws_subnet" "private" {
 
   tags = "${merge(map("Name", format("%s-${var.private_subnet_suffix}-%s", var.name, element(var.azs, count.index))), var.tags, var.private_subnet_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -225,7 +230,7 @@ resource "aws_subnet" "database" {
 
   tags = "${merge(map("Name", format("%s-${var.database_subnet_suffix}-%s", var.name, element(var.azs, count.index))), var.tags, var.database_subnet_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -238,7 +243,7 @@ resource "aws_db_subnet_group" "database" {
 
   tags = "${merge(map("Name", format("%s", var.name)), var.tags, var.database_subnet_group_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -254,7 +259,7 @@ resource "aws_subnet" "redshift" {
 
   tags = "${merge(map("Name", format("%s-${var.redshift_subnet_suffix}-%s", var.name, element(var.azs, count.index))), var.tags, var.redshift_subnet_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -267,7 +272,7 @@ resource "aws_redshift_subnet_group" "redshift" {
 
   tags = "${merge(map("Name", format("%s", var.name)), var.tags, var.redshift_subnet_group_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -283,7 +288,7 @@ resource "aws_subnet" "elasticache" {
 
   tags = "${merge(map("Name", format("%s-${var.elasticache_subnet_suffix}-%s", var.name, element(var.azs, count.index))), var.tags, var.elasticache_subnet_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -307,7 +312,7 @@ resource "aws_subnet" "intra" {
 
   tags = "${merge(map("Name", format("%s-intra-%s", var.name, element(var.azs, count.index))), var.tags, var.intra_subnet_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -333,7 +338,7 @@ resource "aws_eip" "nat" {
 
   tags = "${merge(map("Name", format("%s-%s", var.name, element(var.azs, (var.single_nat_gateway ? 0 : count.index)))), var.tags, var.nat_eip_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -345,7 +350,7 @@ resource "aws_nat_gateway" "this" {
 
   tags = "${merge(map("Name", format("%s-%s", var.name, element(var.azs, (var.single_nat_gateway ? 0 : count.index)))), var.tags, var.nat_gateway_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 
   depends_on = ["aws_internet_gateway.this"]
@@ -493,7 +498,7 @@ resource "aws_vpn_gateway" "this" {
 
   tags = "${merge(map("Name", format("%s", var.name)), var.tags, var.vpn_gateway_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
 
@@ -530,6 +535,6 @@ resource "aws_default_vpc" "this" {
 
   tags = "${merge(map("Name", format("%s", var.default_vpc_name)), var.tags, var.default_vpc_tags)}"
   lifecycle = {
-    ignore_changes = "${local.ignored_tags}"
+    ignore_changes = ["tags"]
   }
 }
