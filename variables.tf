@@ -295,7 +295,7 @@ variable "vpn_gateway_tags" {
 
 variable "ignored_tags" {
   type = "list"
-  default = {}
+  default = []
   description = "Tags to ignore. Do not include tag. as it is prepended to all in this list"
 }
 
